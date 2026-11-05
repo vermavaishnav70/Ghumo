@@ -33,3 +33,7 @@ backend/**/__pycache__/
 .pytest_cache/
 .coverage
 coverage/
+
+# Tooling and IDE
+.gemini/
+.impeccable/
