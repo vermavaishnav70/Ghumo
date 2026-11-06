@@ -28,6 +28,10 @@ class Settings:
     groq_model: str = "openai/gpt-oss-120b"
     supabase_url: str | None = None
     supabase_anon_key: str | None = None
+    tavily_api_key: str | None = None
+    serpapi_api_key: str | None = None
+    amadeus_client_id: str | None = None
+    amadeus_client_secret: str | None = None
     log_level: str = "INFO"
     log_file_path: str | None = None
 
@@ -62,6 +66,10 @@ def get_settings() -> Settings:
         groq_model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
         supabase_url=os.getenv("SUPABASE_URL"),
         supabase_anon_key=os.getenv("SUPABASE_ANON_KEY"),
+        tavily_api_key=os.getenv("TAVILY_API_KEY"),
+        serpapi_api_key=os.getenv("SERPAPI_API_KEY"),
+        amadeus_client_id=os.getenv("AMADEUS_CLIENT_ID"),
+        amadeus_client_secret=os.getenv("AMADEUS_CLIENT_SECRET"),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         log_file_path=os.getenv("LOG_FILE_PATH"),
     )
