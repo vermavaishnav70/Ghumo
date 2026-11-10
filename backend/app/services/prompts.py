@@ -25,6 +25,17 @@ def build_trip_prompt(request: TripPlanRequest, weather_summary: str = "") -> st
         f"Budget: {request.budget}\n",
     ]
 
+    if request.origin:
+        sections.append(f"Origin: {request.origin}\n")
+    if request.travelers and request.travelers > 1:
+        sections.append(f"Travelers: {request.travelers}\n")
+    if request.budget_amount:
+        sections.append(f"Target budget USD: ${request.budget_amount}\n")
+    if request.preferences:
+        sections.append(f"Preferences: {', '.join(request.preferences)}\n")
+    if request.natural_language_query:
+        sections.append(f"User brief: {request.natural_language_query}\n")
+
     if weather_summary:
         sections.append(f"Weather context: {weather_summary}\n")
 
