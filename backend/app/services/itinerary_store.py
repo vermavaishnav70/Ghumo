@@ -294,15 +294,24 @@ class SupabaseItineraryStore:
             .order("created_at")
             .execute()
         )
+        source_prompt = itinerary_row.get("source_prompt") or {}
+        if not isinstance(source_prompt, dict):
+            source_prompt = {}
+
         return SavedItineraryDetail.model_validate(
             {
                 **self._normalize_summary_row(itinerary_row),
                 "trip_request": {
                     "destination": itinerary_row["destination"],
+                    "origin": source_prompt.get("origin"),
                     "number_of_days": itinerary_row["number_of_days"],
                     "trip_start": itinerary_row["trip_start"],
+                    "travelers": source_prompt.get("travelers") or 1,
                     "itinerary_type": itinerary_row["itinerary_type"],
                     "budget": itinerary_row["budget"],
+                    "budget_amount": source_prompt.get("budget_amount"),
+                    "preferences": source_prompt.get("preferences") or [],
+                    "natural_language_query": source_prompt.get("natural_language_query"),
                 },
                 "current_itinerary": version_row["itinerary_json"],
                 "messages": [
