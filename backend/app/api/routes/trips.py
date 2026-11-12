@@ -1,16 +1,38 @@
-from fastapi import APIRouter, Depends, status
-from fastapi import Query
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 
 from app.core.logging import get_logger, log_event
 from app.dependencies import get_orchestrator, get_weather_service
-from app.schemas.trips import TripEditRequest, TripPlanRequest, TripPlanResponseEnvelope
+from app.schemas.trips import (
+    TripBookingApprovalRequest,
+    TripEditRequest,
+    TripIntakeRequest,
+    TripIntakeResponseEnvelope,
+    TripOptionSelectionRequest,
+    TripPlanMeta,
+    TripPlanRequest,
+    TripPlanResponseEnvelope,
+)
 from app.schemas.weather import WeatherResponseEnvelope
 from app.services.orchestrator import TripPlanningError, TripPlanningOrchestrator
 from app.services.weather import WeatherService, WeatherServiceError
 
 router = APIRouter(prefix="/api/trips", tags=["trips"])
 logger = get_logger("wanderlust.trips")
+
+
+@router.post("/intake", response_model=TripIntakeResponseEnvelope)
+async def analyze_trip_intake(
+    payload: TripIntakeRequest,
+    orchestrator: TripPlanningOrchestrator = Depends(get_orchestrator),
+) -> TripIntakeResponseEnvelope:
+    data = await orchestrator.analyze_intake(payload)
+    return TripIntakeResponseEnvelope(
+        success=True,
+        data=data,
+        error=None,
+        meta=TripPlanMeta(),
+    )
 
 
 @router.post("/plan", response_model=TripPlanResponseEnvelope)
@@ -81,6 +103,34 @@ async def edit_trip(
             status_code=error.status_code,
             content=error_payload.model_dump(mode="json"),
         )
+
+
+@router.post("/select-options", response_model=TripPlanResponseEnvelope)
+async def select_trip_options(
+    payload: TripOptionSelectionRequest,
+    orchestrator: TripPlanningOrchestrator = Depends(get_orchestrator),
+) -> TripPlanResponseEnvelope:
+    result = await orchestrator.select_options(payload)
+    return TripPlanResponseEnvelope(
+        success=True,
+        data=result.data,
+        error=None,
+        meta=result.meta,
+    )
+
+
+@router.post("/approve-booking", response_model=TripPlanResponseEnvelope)
+async def approve_trip_booking(
+    payload: TripBookingApprovalRequest,
+    orchestrator: TripPlanningOrchestrator = Depends(get_orchestrator),
+) -> TripPlanResponseEnvelope:
+    result = await orchestrator.approve_booking(payload)
+    return TripPlanResponseEnvelope(
+        success=True,
+        data=result.data,
+        error=None,
+        meta=result.meta,
+    )
 
 
 @router.get("/providers", status_code=status.HTTP_200_OK)
