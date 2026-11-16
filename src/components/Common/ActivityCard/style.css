@@ -1,70 +1,125 @@
-.activity-card {
+.activity-timeline-item {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  padding: 12px 0;
+}
+
+.activity-step-col {
   display: flex;
   flex-direction: column;
-  min-width: 216px;
-  padding: 16px;
-  align-items: flex-start;
-  gap: 16px;
-  border-radius: 16px;
-  border: 1px solid #23282f;
-  background: rgba(22, 25, 29, 0.8);
-  backdrop-filter: blur(5px);
-}
-.activity-number {
-  display: flex;
-  width: 24px;
-  aspect-ratio: 1;
-  justify-content: center;
   align-items: center;
-  border-radius: 26px;
-  background: #feb000;
-  color: #16191d;
-  font-style: normal;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-bottom: 16px;
+  width: 28px;
+  flex-shrink: 0;
 }
-.main-info-wrapper {
+
+.activity-step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--terracotta);
+  color: #FFFDF9;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.timing {
-  color: #f9a700;
-  font-family: "Geist";
-  font-size: 11px;
-  font-style: normal;
+
+.activity-step-track {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  background: var(--rule-mid);
+  margin: 4px 0 -16px;
+}
+
+.activity-body-col {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: #FFFDF9;
+  border: 1px solid var(--rule-soft);
+}
+
+.activity-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.activity-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.activity-time-pill {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--bg-sandstone);
+  border: 1px solid var(--rule-soft);
+  color: var(--terracotta-ink);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   font-weight: 600;
-  line-height: 120%; /* 13.2px */
-  letter-spacing: 2px;
-  text-transform: uppercase;
 }
-.text {
-  color: var(--text-action, #fff);
-  font-family: "Geist";
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 160%; /* 22.4px */
-  letter-spacing: 0.1px;
+
+.activity-name {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
 }
-.detail-text {
-  color: #adadad;
-  font-family: "Geist";
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 160%; /* 22.4px */
-  letter-spacing: 0.1px;
+
+.activity-meta-pills {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 216px;
 }
-.dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #adadad;
-  justify-self: center;
+
+.activity-duration-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--bg-sandstone);
+  border: 1px solid var(--rule-soft);
+  font-size: 11.5px;
+  color: var(--ink-secondary);
+}
+
+.activity-price-pill {
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--pine-tint);
+  color: var(--pine-ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activity-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--pine-ink);
+  margin-bottom: 6px;
+}
+
+.activity-description {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-secondary);
 }

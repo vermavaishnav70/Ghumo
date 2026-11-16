@@ -1,0 +1,130 @@
+.flight-arc-banner {
+  display: grid;
+  grid-template-columns: auto 240px auto;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: #F6F1E9;
+  border: 1px solid var(--rule-soft);
+}
+
+.flight-arc-banner.compact {
+  padding: 8px 12px;
+}
+
+.flight-arc-airport {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-primary);
+}
+
+.flight-arc-stage {
+  position: relative;
+  width: 240px;
+  height: 42px;
+}
+
+.flight-arc-svg {
+  width: 240px;
+  height: 42px;
+  display: block;
+}
+
+.flight-arc-track {
+  stroke: var(--rule-mid);
+  stroke-width: 1.75;
+  stroke-dasharray: 5 4;
+  animation: flight-dash-flow 18s linear infinite;
+}
+
+.flight-arc-plane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--terracotta);
+  offset-path: path("M 12 32 Q 120 2 228 32");
+  offset-rotate: auto;
+  offset-anchor: 50% 50%;
+  animation: flight-arc-cruise 4.4s cubic-bezier(0.45, 0.05, 0.25, 1) infinite;
+  will-change: offset-distance, opacity, transform;
+}
+
+.flight-arc-caption {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-secondary);
+  margin-top: -2px;
+}
+
+@keyframes flight-arc-cruise {
+  0% {
+    offset-distance: 4%;
+    opacity: 0;
+    transform: scale(0.84);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    offset-distance: 96%;
+    opacity: 0;
+    transform: scale(0.84);
+  }
+}
+
+@keyframes flight-dash-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -180;
+  }
+}
+
+@media (max-width: 520px) {
+  .flight-arc-banner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .flight-arc-stage {
+    width: 100%;
+    max-width: 180px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  .flight-arc-svg {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flight-arc-track {
+    animation: none;
+  }
+
+  .flight-arc-plane {
+    animation: none;
+    offset-distance: 50%;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
