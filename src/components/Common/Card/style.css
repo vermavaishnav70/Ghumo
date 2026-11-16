@@ -1,57 +1,53 @@
-.card {
-  display: flex;
+.timeline-day-card {
   width: 100%;
-  max-width: 100%;
+  border-radius: var(--radius-md);
+  background: var(--bg-ivory);
+  border: 1px solid var(--border-card);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-paper);
+}
+
+.timeline-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1.5px dashed var(--rule-mid);
+}
+
+.timeline-day-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.timeline-day-badge {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.timeline-day-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+
+.timeline-day-subtotal {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+.timeline-day-subtotal strong {
+  color: var(--pine-ink);
+}
+
+.timeline-activities-list {
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  border-radius: 16px;
-  box-shadow: 0px -7px 16px 0px rgba(0, 0, 0, 0.34),
-    0px -30px 30px 0px rgba(0, 0, 0, 0.3),
-    0px -67px 40px 0px rgba(0, 0, 0, 0.17),
-    0px -119px 48px 0px rgba(0, 0, 0, 0.05),
-    0px -186px 52px 0px rgba(0, 0, 0, 0.01);
-  overflow-x: scroll;
-}
-.gradient-wrapper {
-  content: "";
-  /* position: absolute; */
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  background: linear-gradient(
-    157deg,
-    #0b0c0e -11.2%,
-    rgba(11, 12, 14, 0) 69.89%
-  );
-  z-index: 0;
-  overflow-x: scroll;
-  padding-right: 0;
-  height: fit-content;
-}
-.day-number {
-  margin: 24px 0 0 12px;
-  color: #fff;
-  margin-bottom: 24px;
-  font-family: "Geist";
-  font-size: 40px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 120%; /* 48px */
-  letter-spacing: 0.25px;
-}
-.activity-cards-wrapper {
-  overflow-x: scroll;
-  display: flex;
-  align-items: stretch;
-  gap: var(--spacing-12px, 12px);
-  align-self: stretch;
-  margin: 0 12px 12px;
-}
-.activity-cards-wrapper::-webkit-scrollbar {
-  display: none;
-}
-.card-content {
-  padding: 24px;
 }

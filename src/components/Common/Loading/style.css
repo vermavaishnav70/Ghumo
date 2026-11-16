@@ -1,105 +1,38 @@
-.cards-container-loading {
-  position: relative;
+.ghumo-loading-shell {
   width: 100%;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  animation: slideIn 0.5s ease-in-out;
-  background: url("/assets/AI-Trip-Planner.png");
-  background-repeat: no-repeat;
-  background-size: cover;
-  overflow: hidden;
+  background: var(--bg-sandstone);
+  padding: 24px;
 }
 
-.animation-layer-loading {
-  /* animation: animation-layer-fade 1s cubic-bezier(0.215, 0.61, 0.355, 1) */
-  /* forwards; */
-  animation-delay: 1.3s;
+.ghumo-loading-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 28px;
+  border-radius: var(--radius-md);
+  background: var(--bg-ivory);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-paper);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
 }
 
-.cutout-loading {
-  background: url("../../../assets/long-bg.png");
-  background-size: cover;
-  animation: scrollBackground 50s linear infinite;
-  background-repeat: repeat-x;
+.ghumo-loading-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
-.text-loading {
-  position: absolute;
-  top: 80%;
-  z-index: 100;
-}
-
-.text-loading::after {
-  content: "";
-  position: absolute;
-  left: 100%;
-  /* Animation */
-  animation: dotAnimation 1.5s infinite;
-}
-
-@keyframes dotAnimation {
-
-  0%,
-  20% {
-    content: "";
-  }
-
-  40% {
-    content: ".";
-  }
-
-  60% {
-    content: "..";
-  }
-
-  80%,
-  100% {
-    content: "...";
-  }
-}
-
-@keyframes slideIn {
-  0% {
-    transform: translateX(100%);
-  }
-
-  100% {
-    transform: translateX(0);
-  }
-}
-
-@keyframes expandWindow {
-  0% {
-    /* opacity: 1; */
-  }
-
-  100% {
-    border-radius: 0;
-    width: 100%;
-    height: 100%;
-    /* opacity: 0; */
-  }
-}
-
-@keyframes animation-layer-fade {
-  0% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    display: none;
-  }
-}
-
-@keyframes scrollBackground {
-  0% {
-    background-position: 0% 0;
-  }
-
-  100% {
-    background-position: 100% 0;
-  }
+.ghumo-loading-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-primary);
 }
