@@ -20,12 +20,42 @@ const getAuthHeaders = (accessToken) => {
   };
 };
 
+export const analyzeTripIntake = async ({
+  prompt,
+  current_spec = null,
+  answers = {},
+}) => {
+  const response = await fetch(`${API_BASE_URL}/api/trips/intake`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      prompt,
+      current_spec,
+      answers,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await normalizeApiError(response));
+  }
+
+  const payload = await response.json();
+  return payload.data;
+};
+
 export const planTrip = async ({
   destination,
+  origin = null,
   number_of_days,
   trip_start,
+  travelers = 1,
   itinerary_type,
   budget,
+  budget_amount = null,
+  preferences = [],
+  natural_language_query = null,
 }) => {
   const response = await fetch(`${API_BASE_URL}/api/trips/plan`, {
     method: "POST",
@@ -34,10 +64,71 @@ export const planTrip = async ({
     },
     body: JSON.stringify({
       destination,
-      number_of_days,
+      origin: origin || null,
+      number_of_days: Number(number_of_days) || 3,
       trip_start: trip_start || null,
-      itinerary_type,
+      travelers: Number(travelers) || 1,
+      itinerary_type: itinerary_type || "City Experiences",
       budget,
+      budget_amount: budget_amount ? Number(budget_amount) : null,
+      preferences: Array.isArray(preferences) ? preferences : [],
+      natural_language_query: natural_language_query || null,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await normalizeApiError(response));
+  }
+
+  const payload = await response.json();
+  return payload.data;
+};
+
+export const selectTripOptions = async ({
+  trip_request,
+  current_itinerary,
+  selected_flight_id = null,
+  selected_stay_id = null,
+  selected_transport_id = null,
+}) => {
+  const response = await fetch(`${API_BASE_URL}/api/trips/select-options`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      trip_request,
+      current_itinerary,
+      selected_flight_id,
+      selected_stay_id,
+      selected_transport_id,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await normalizeApiError(response));
+  }
+
+  const payload = await response.json();
+  return payload.data;
+};
+
+export const approveTripBooking = async ({
+  trip_request,
+  current_itinerary,
+  approved,
+  approval_notes = null,
+}) => {
+  const response = await fetch(`${API_BASE_URL}/api/trips/approve-booking`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      trip_request,
+      current_itinerary,
+      approved: Boolean(approved),
+      approval_notes: approval_notes || null,
     }),
   });
 
