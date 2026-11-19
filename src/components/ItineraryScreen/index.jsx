@@ -1,7 +1,6 @@
 import "./style.css";
 import BrandHeader from "../Common/BrandHeader/index.jsx";
 import Card from "../Common/Card/index.jsx";
-import Button from "../Common/Button/index.jsx";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import ErrorScreen from "../ErrorScreen/index.jsx";
 import NotFoundScreen from "../NotFoundScreen/index.jsx";
@@ -11,8 +10,10 @@ import WeatherPreview from "../WeatherPreview/index.jsx";
 import AuthPrompt from "../AuthPrompt/index.jsx";
 import ItinerarySkeleton from "./ItinerarySkeleton.jsx";
 import SkeletonBlock from "../Common/SkeletonBlock/index.jsx";
+import AgenticBookingHub from "../AgenticBookingHub/index.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import {
+  approveTripBooking,
   deleteSavedItinerary,
   editSavedItinerary,
   editTrip,
@@ -22,6 +23,7 @@ import {
   planTrip,
   restoreSavedItineraryVersion,
   saveItinerary,
+  selectTripOptions,
 } from "../../utils/apiService.js";
 
 const PENDING_SAVE_KEY = "pendingItinerarySave";
@@ -29,6 +31,7 @@ const PENDING_SAVE_LOCK_KEY = "pendingItinerarySaveInFlight";
 const PANEL_WEATHER = "weather";
 const PANEL_VERSIONS = "versions";
 const PANEL_LOGS = "Activity";
+
 const createClientRequestId = () =>
   globalThis.crypto?.randomUUID?.() ??
   `save-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -40,6 +43,8 @@ const ItineraryScreen = () => {
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [messages, setMessages] = useState([]);
   const [editing, setEditing] = useState(false);
+  const [updatingOptions, setUpdatingOptions] = useState(false);
+  const [approvingBooking, setApprovingBooking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [restoringVersion, setRestoringVersion] = useState(null);
@@ -51,30 +56,40 @@ const ItineraryScreen = () => {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [savedTripMissing, setSavedTripMissing] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [workspaceTab, setWorkspaceTab] = useState("timeline");
+
   const location = useLocation();
   const navigate = useNavigate();
   const { itineraryId } = useParams();
   const { accessToken, isConfigured, signOut, user } = useAuth();
-  const { inputValues } = location.state || {};
+  const { inputValues, tripRequest: stateTripRequest } = location.state || {};
   const isSavedMode = Boolean(itineraryId);
   const [activePanel, setActivePanel] = useState(PANEL_WEATHER);
 
-  const draftTripRequest = inputValues
-    ? {
-        destination: inputValues[1],
-        number_of_days: Number(inputValues[2]),
-        trip_start: inputValues[3],
-        itinerary_type: inputValues[4],
-        budget: inputValues[5],
-      }
-    : null;
+  const draftTripRequest = stateTripRequest
+    ? stateTripRequest
+    : inputValues
+      ? {
+          destination: inputValues[1],
+          number_of_days: Number(inputValues[2]),
+          trip_start: inputValues[3] || null,
+          itinerary_type: inputValues[4],
+          budget: inputValues[5],
+          origin: "New Delhi",
+          travelers: 1,
+        }
+      : null;
   const tripRequest = savedTrip?.trip_request || draftTripRequest;
 
-  const tripRequestJson = draftTripRequest ? JSON.stringify(draftTripRequest) : null;
-  const cacheKey = draftTripRequest
-    ? `itineraryData:${tripRequestJson}`
+  const tripRequestJson = draftTripRequest
+    ? JSON.stringify(draftTripRequest)
     : null;
-  const [saveRequestId, setSaveRequestId] = useState(() => createClientRequestId());
+  const cacheKey = draftTripRequest
+    ? `itineraryData:v2:${tripRequestJson}`
+    : null;
+  const [saveRequestId, setSaveRequestId] = useState(() =>
+    createClientRequestId()
+  );
 
   const completeSave = useCallback(
     async (payload) => {
@@ -127,7 +142,7 @@ const ItineraryScreen = () => {
 
       if (!currentTripRequest || !cacheKey) {
         setError(
-          "Missing trip details. Please fill in your trip preferences again."
+          "Missing trip details. Please configure your trip specification first."
         );
         setLoading(false);
         return;
@@ -202,7 +217,15 @@ const ItineraryScreen = () => {
     }
 
     fetchDraftData();
-  }, [accessToken, cacheKey, isSavedMode, itineraryId, loadWeather, signOut, tripRequestJson]);
+  }, [
+    accessToken,
+    cacheKey,
+    isSavedMode,
+    itineraryId,
+    loadWeather,
+    signOut,
+    tripRequestJson,
+  ]);
 
   useEffect(() => {
     const autoSavePendingDraft = async () => {
@@ -224,7 +247,10 @@ const ItineraryScreen = () => {
               client_request_id: createClientRequestId(),
             };
         if (!parsedDraft.client_request_id) {
-          sessionStorage.setItem(PENDING_SAVE_KEY, JSON.stringify(normalizedDraft));
+          sessionStorage.setItem(
+            PENDING_SAVE_KEY,
+            JSON.stringify(normalizedDraft)
+          );
         }
         setSaving(true);
         setSaveError("");
@@ -239,6 +265,61 @@ const ItineraryScreen = () => {
 
     autoSavePendingDraft();
   }, [accessToken, completeSave, isSavedMode, saving]);
+
+  const handleSelectOptions = async ({
+    selected_flight_id = null,
+    selected_stay_id = null,
+    selected_transport_id = null,
+  }) => {
+    if (!tripRequest || !data || updatingOptions) {
+      return;
+    }
+
+    setUpdatingOptions(true);
+    setSaveError("");
+    try {
+      const updated = await selectTripOptions({
+        trip_request: tripRequest,
+        current_itinerary: data,
+        selected_flight_id,
+        selected_stay_id,
+        selected_transport_id,
+      });
+      setData(updated);
+      if (cacheKey && !isSavedMode) {
+        sessionStorage.setItem(cacheKey, JSON.stringify(updated));
+      }
+    } catch (err) {
+      setSaveError(`Could not update travel option: ${err.message}`);
+    } finally {
+      setUpdatingOptions(false);
+    }
+  };
+
+  const handleApproveBooking = async ({ approved, approval_notes }) => {
+    if (!tripRequest || !data || approvingBooking) {
+      return;
+    }
+
+    setApprovingBooking(true);
+    setSaveError("");
+    try {
+      const updated = await approveTripBooking({
+        trip_request: tripRequest,
+        current_itinerary: data,
+        approved,
+        approval_notes,
+      });
+      setData(updated);
+      if (cacheKey && !isSavedMode) {
+        sessionStorage.setItem(cacheKey, JSON.stringify(updated));
+      }
+    } catch (err) {
+      setSaveError(`Could not update booking approval: ${err.message}`);
+    } finally {
+      setApprovingBooking(false);
+    }
+  };
 
   const handleEdit = async (message) => {
     if (!tripRequest || !data) {
@@ -271,7 +352,7 @@ const ItineraryScreen = () => {
           ...nextMessages,
           {
             role: "assistant",
-            content: `Updated the itinerary for: ${message}`,
+            content: `Updated the itinerary and re-evaluated costs for: ${message}`,
           },
         ];
         setMessages(finalMessages);
@@ -306,10 +387,7 @@ const ItineraryScreen = () => {
         messages,
         title: `${tripRequest.destination} ${tripRequest.number_of_days}-day trip`,
       };
-      sessionStorage.setItem(
-        PENDING_SAVE_KEY,
-        JSON.stringify(pendingPayload)
-      );
+      sessionStorage.setItem(PENDING_SAVE_KEY, JSON.stringify(pendingPayload));
       setShowAuthPrompt(true);
       return;
     }
@@ -485,9 +563,10 @@ const ItineraryScreen = () => {
         <WeatherPreview weather={weather} />
       ) : (
         <div className="itinerary-history-card">
-          <div className="itinerary-history-title">Weather</div>
+          <div className="itinerary-history-title">Weather Context</div>
           <div className="itinerary-history-subtitle">
-            Weather context will appear here when trip dates are available.
+            Add a departure date in the Trip Studio to load daily forecast
+            context.
           </div>
         </div>
       );
@@ -503,7 +582,10 @@ const ItineraryScreen = () => {
             </div>
             <div className="itinerary-history-list">
               {(savedTrip.versions || []).map((version) => (
-                <div className="itinerary-history-item" key={version.version_number}>
+                <div
+                  className="itinerary-history-item"
+                  key={version.version_number}
+                >
                   <div className="itinerary-history-item-row">
                     <div className="itinerary-history-item-title">
                       Version {version.version_number}
@@ -513,20 +595,29 @@ const ItineraryScreen = () => {
                         <>
                           <button
                             className="itinerary-history-action"
-                            disabled={previewingVersion === version.version_number}
-                            onClick={() => handlePreviewVersion(version.version_number)}
+                            disabled={
+                              previewingVersion === version.version_number
+                            }
+                            onClick={() =>
+                              handlePreviewVersion(version.version_number)
+                            }
                             type="button"
                           >
                             {previewingVersion === version.version_number
                               ? "Loading..."
-                              : versionPreview?.version_number === version.version_number
+                              : versionPreview?.version_number ===
+                                  version.version_number
                                 ? "Hide preview"
                                 : "Preview"}
                           </button>
                           <button
                             className="itinerary-history-action"
-                            disabled={restoringVersion === version.version_number}
-                            onClick={() => handleRestoreVersion(version.version_number)}
+                            disabled={
+                              restoringVersion === version.version_number
+                            }
+                            onClick={() =>
+                              handleRestoreVersion(version.version_number)
+                            }
                             type="button"
                           >
                             {restoringVersion === version.version_number
@@ -535,7 +626,9 @@ const ItineraryScreen = () => {
                           </button>
                         </>
                       ) : (
-                        <span className="itinerary-history-current">Current</span>
+                        <span className="itinerary-history-current">
+                          Current
+                        </span>
                       )}
                     </div>
                   </div>
@@ -554,8 +647,7 @@ const ItineraryScreen = () => {
                     Previewing version {versionPreview.version_number}
                   </div>
                   <div className="itinerary-preview-subtitle">
-                    This is a safe preview. Restoring will create a new latest
-                    version and keep history intact.
+                    Safe preview. Restoring creates a new latest version.
                   </div>
                 </div>
                 <button
@@ -567,14 +659,14 @@ const ItineraryScreen = () => {
                 </button>
               </div>
               <div className="cards-wrapper cards-wrapper-preview">
-                {(versionPreview.itinerary?.itinerary || []).map((itinerary, index) => {
-                  return (
+                {(versionPreview.itinerary?.itinerary || []).map(
+                  (itinerary, index) => (
                     <Card
                       itinerary={itinerary}
                       key={`${versionPreview.version_number}-${index}`}
                     />
-                  );
-                })}
+                  )
+                )}
               </div>
             </div>
           ) : null}
@@ -586,25 +678,30 @@ const ItineraryScreen = () => {
       <div className="itinerary-history-card">
         <div className="itinerary-history-title">Edit history</div>
         <div className="itinerary-history-subtitle">
-          Recent chat messages tied to this trip.
+          Recent chat refinements tied to this trip.
         </div>
         <div className="itinerary-history-list">
-          {(messages || []).slice(-6).reverse().map((message, index) => (
-            <div
-              className="itinerary-history-item"
-              key={`${message.role}-${message.created_at || index}`}
-            >
-              <div className="itinerary-history-item-title">
-                {message.role === "assistant" ? "Assistant" : "You"}
-              </div>
-              <div className="itinerary-history-item-copy">{message.content}</div>
-              {message.created_at ? (
-                <div className="itinerary-history-item-meta">
-                  {new Date(message.created_at).toLocaleString()}
+          {(messages || [])
+            .slice(-6)
+            .reverse()
+            .map((message, index) => (
+              <div
+                className="itinerary-history-item"
+                key={`${message.role}-${message.created_at || index}`}
+              >
+                <div className="itinerary-history-item-title">
+                  {message.role === "assistant" ? "Assistant" : "You"}
                 </div>
-              ) : null}
-            </div>
-          ))}
+                <div className="itinerary-history-item-copy">
+                  {message.content}
+                </div>
+                {message.created_at ? (
+                  <div className="itinerary-history-item-meta">
+                    {new Date(message.created_at).toLocaleString()}
+                  </div>
+                ) : null}
+              </div>
+            ))}
         </div>
       </div>
     );
@@ -617,82 +714,100 @@ const ItineraryScreen = () => {
         <div className="itinerary-content-grid">
           <div className="itinerary-main-col">
             <div className="itinerary-toolbar">
-              <div className="itinerary-toolbar-copy">
-                {isSavedMode ? (
-                  <>
-                    <div className="itinerary-toolbar-title">
-                      {savedTrip?.title || "Saved itinerary"}
-                    </div>
-                    <div className="itinerary-toolbar-subtitle">
-                      {savedTrip
-                        ? `Version ${savedTrip.current_version} · ${savedTrip.destination}`
-                        : "Loading saved trip"}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="itinerary-toolbar-title">
-                      {tripRequest?.destination || "Your itinerary"}
-                    </div>
-                    <div className="itinerary-toolbar-subtitle">
-                      Save this draft to revisit and keep editing it later.
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="itinerary-toolbar-actions">
-                {!isSavedMode ? (
-                  <button
-                    className="itinerary-action-button primary"
-                    disabled={saving}
-                    onClick={handleSave}
-                    type="button"
+              <div className="itinerary-toolbar-top">
+                <div className="itinerary-toolbar-copy">
+                  <h1 className="itinerary-toolbar-title">
+                    {isSavedMode
+                      ? savedTrip?.title || "Saved Trip Folio"
+                      : `${tripRequest?.destination || "Your"} Trip Timetable`}
+                  </h1>
+                  <div className="itinerary-route-meta tabular">
+                    {tripRequest?.origin ? `${tripRequest.origin} → ` : ""}
+                    {tripRequest?.destination || "Destination"} ·{" "}
+                    {tripRequest?.number_of_days || itineraries.length} Days ·{" "}
+                    {tripRequest?.travelers || 1} Traveler(s) ·{" "}
+                    {tripRequest?.budget || "Medium"} Budget
+                  </div>
+                  <div className="itinerary-toolbar-subtitle">
+                    {isSavedMode && savedTrip
+                      ? `Version ${savedTrip.current_version} · Saved to your Ghumo account`
+                      : "Compare flights, stays, and transit, validate policies, and approve before booking."}
+                  </div>
+                </div>
+
+                <div className="itinerary-toolbar-actions">
+                  {!isSavedMode ? (
+                    <button
+                      className="itinerary-action-button primary"
+                      disabled={saving}
+                      onClick={handleSave}
+                      type="button"
+                    >
+                      {saving
+                        ? "Saving..."
+                        : user
+                          ? "Save Trip"
+                          : "Save with Sign In"}
+                    </button>
+                  ) : (
+                    <button
+                      className="itinerary-action-button danger"
+                      disabled={deleting}
+                      onClick={handleDelete}
+                      type="button"
+                    >
+                      {deleting ? "Deleting..." : "Delete Trip"}
+                    </button>
+                  )}
+                  <Link
+                    className="itinerary-action-button secondary"
+                    to="/fill-details"
+                    onClick={() => {
+                      if (cacheKey && !isSavedMode) {
+                        sessionStorage.removeItem(cacheKey);
+                      }
+                    }}
                   >
-                    {saving ? "Saving..." : user ? "Save trip" : "Save with sign in"}
-                  </button>
-                ) : (
-                  <button
-                    className="itinerary-action-button danger"
-                    disabled={deleting}
-                    onClick={handleDelete}
-                    type="button"
-                  >
-                    {deleting ? "Deleting..." : "Delete trip"}
-                  </button>
-                )}
-                <Link className="itinerary-action-button secondary" to="/saved-trips">
-                  Saved trips
-                </Link>
+                    New Trip Studio
+                  </Link>
+                </div>
               </div>
-              {saveError ? <div className="itinerary-inline-error">{saveError}</div> : null}
+              {saveError ? (
+                <div className="itinerary-inline-error">{saveError}</div>
+              ) : null}
             </div>
-            
+
             {showAuthPrompt && !user ? (
               <AuthPrompt
                 title="Save this trip to your account"
-                description="Sign in with a magic link and we’ll save this itinerary automatically as soon as your session is ready."
+                description="Sign in with a magic link and we’ll save this itinerary and booking state automatically."
               />
             ) : null}
-            
-            <div className="cards-wrapper">
-              {itineraries?.map((itinerary, index) => {
-                return <Card itinerary={itinerary} key={index} />;
-              })}
-            </div>
-            
-            <Link
-              to="/fill-details"
-              onClick={() => {
-                if (cacheKey && !isSavedMode) {
-                  sessionStorage.removeItem(cacheKey);
-                }
-              }}
+
+            <AgenticBookingHub
+              data={data}
+              activeTab={workspaceTab}
+              onTabChange={setWorkspaceTab}
+              onSelectOptions={handleSelectOptions}
+              onApproveBooking={handleApproveBooking}
+              updatingOptions={updatingOptions}
+              approvingBooking={approvingBooking}
             >
-              <Button text="Plan a new trip" style={{margin: "0px", marginTop: "20px", width: "100%"}} />
-            </Link>
+              <div className="cards-wrapper">
+                {itineraries?.map((itinerary, index) => (
+                  <Card itinerary={itinerary} key={index} />
+                ))}
+              </div>
+            </AgenticBookingHub>
           </div>
 
           <div className="itinerary-sidebar-col">
+            <ChatPanel
+              messages={messages}
+              onSend={handleEdit}
+              sending={editing}
+            />
+
             {panelTabs.length ? (
               <div className="itinerary-support-shell">
                 {panelTabs.length > 1 ? (
@@ -701,12 +816,17 @@ const ItineraryScreen = () => {
                       <button
                         className={`itinerary-support-tab ${
                           activePanel === tab.id ? "active" : ""
-                        } ${tab.id === PANEL_WEATHER && weatherLoading ? "loading" : ""}`}
+                        } ${
+                          tab.id === PANEL_WEATHER && weatherLoading
+                            ? "loading"
+                            : ""
+                        }`}
                         key={tab.id}
                         onClick={() => setActivePanel(tab.id)}
                         type="button"
                       >
-                        {activePanel === tab.id || (tab.id === PANEL_WEATHER && weatherLoading) ? (
+                        {activePanel === tab.id ||
+                        (tab.id === PANEL_WEATHER && weatherLoading) ? (
                           <span
                             className={`itinerary-support-tab-active-dot ${
                               tab.id === PANEL_WEATHER && weatherLoading
@@ -720,11 +840,11 @@ const ItineraryScreen = () => {
                     ))}
                   </div>
                 ) : null}
-                <div className="itinerary-support-panel">{renderSupportPanel()}</div>
+                <div className="itinerary-support-panel">
+                  {renderSupportPanel()}
+                </div>
               </div>
             ) : null}
-            
-            <ChatPanel messages={messages} onSend={handleEdit} sending={editing} />
           </div>
         </div>
       </div>
